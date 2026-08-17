@@ -1,13 +1,4 @@
-const { getStore } = require("@netlify/blobs");
-
-// Full cross-device sync for every item (schedule, to-do, to-read).
-// Protected by a shared passphrase (SYNC_CODE) the user sets once in Netlify
-// and enters on each device — this is a personal single-user app, not a
-// multi-account system, so a shared secret is enough.
-//
-// Merge strategy: last-write-wins per item, compared by `updatedAt`.
-// Deletes are soft (item.deleted = true) so a delete on one device can
-// correctly "win" over a stale copy still held on another device.
+const { getRemindersStore } = require("./lib/blobs");
 
 function checkAuth(event) {
   const expected = process.env.SYNC_CODE;
@@ -23,7 +14,7 @@ exports.handler = async (event) => {
   const auth = checkAuth(event);
   if (!auth.ok) return { statusCode: auth.statusCode, body: JSON.stringify({ error: auth.message }) };
 
-  const store = getStore("reminders");
+  const store = getRemindersStore();
 
   const noStore = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 
@@ -43,8 +34,6 @@ exports.handler = async (event) => {
       const items = (await store.get("items", { type: "json" })) || [];
       const idx = items.findIndex((it) => it.id === incoming.id);
 
-      // Last-write-wins: only accept the incoming version if it's at least
-      // as new as what the server already has.
       if (idx === -1) {
         items.push(incoming);
       } else if (incoming.updatedAt >= (items[idx].updatedAt || 0)) {
