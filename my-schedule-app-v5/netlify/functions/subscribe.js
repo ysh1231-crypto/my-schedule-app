@@ -1,9 +1,5 @@
-const { getStore } = require("@netlify/blobs");
+const { getRemindersStore } = require("./lib/blobs");
 
-// Saves a browser's Web Push subscription so the scheduled function can
-// notify it later, even while the app/phone screen is off. Subscriptions
-// are kept as a list (deduped by endpoint) so multiple devices — e.g. an
-// iPhone and a MacBook — can each receive reminders independently.
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -24,7 +20,7 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "subscription missing" }) };
     }
 
-    const store = getStore("reminders");
+    const store = getRemindersStore();
     const subs = (await store.get("subscriptions", { type: "json" })) || [];
     const next = subs.filter((s) => s.endpoint !== body.subscription.endpoint);
     next.push(body.subscription);
