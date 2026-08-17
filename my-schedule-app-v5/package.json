@@ -1,0 +1,10 @@
+{
+  "name": "my-schedule-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "개인용 일정 관리 PWA + 서버리스 푸시 알림 함수",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.13",
+    "web-push": "^3.6.7"
+  }
+}

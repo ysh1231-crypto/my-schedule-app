@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>내 일정 관리</title>
+<meta name="description" content="캘린더와 중요도·긴급도 사분면으로 관리하는 나만의 일정 관리 앱" />
+<meta name="theme-color" content="#4F46E5" />
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="일정관리" />
+<meta name="mobile-web-app-capable" content="yes" />
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <h1>📅 내 일정</h1>
+    <div class="header-actions">
+      <button id="syncBtn" class="icon-btn" type="button" aria-label="기기 연결">🔄</button>
+      <button id="notifyBtn" class="icon-btn" type="button" aria-label="알림 설정">🔔</button>
+      <button id="todayBtn" class="ghost-btn" type="button">오늘</button>
+    </div>
+  </header>
+
+  <!-- View: Calendar -->
+  <section id="calendarView" class="view">
+    <div class="month-nav">
+      <button id="prevMonthBtn" class="icon-btn" type="button" aria-label="이전 달">‹</button>
+      <h2 id="monthLabel">2026년 8월</h2>
+      <button id="nextMonthBtn" class="icon-btn" type="button" aria-label="다음 달">›</button>
+    </div>
+
+    <div class="weekday-row">
+      <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+    </div>
+
+    <div id="calendarGrid" class="calendar-grid"></div>
+
+    <div class="day-detail">
+      <h3 id="dayDetailLabel">오늘의 일정</h3>
+      <ul id="dayDetailList" class="item-list"></ul>
+      <p id="dayDetailEmpty" class="empty-hint" hidden>등록된 일정이 없어요. + 버튼으로 추가해보세요.</p>
+    </div>
+  </section>
+
+  <!-- View: Matrix -->
+  <section id="matrixView" class="view" hidden>
+    <div class="matrix-toolbar">
+      <p class="matrix-intro">중요도와 긴급도로 할 일을 정리해보세요.</p>
+      <label class="toggle-inline">
+        <input type="checkbox" id="showDoneToggle" />
+        <span>완료 항목 표시</span>
+      </label>
+    </div>
+
+    <div class="matrix-grid">
+      <div class="quadrant q1" data-quadrant="q1">
+        <div class="quadrant-head">
+          <span class="quadrant-title">🔥 바로 처리</span>
+          <span class="quadrant-sub">중요 · 긴급</span>
+        </div>
+        <ul class="item-list" data-list="q1"></ul>
+      </div>
+      <div class="quadrant q2" data-quadrant="q2">
+        <div class="quadrant-head">
+          <span class="quadrant-title">🗓 계획하기</span>
+          <span class="quadrant-sub">중요 · 안 긴급</span>
+        </div>
+        <ul class="item-list" data-list="q2"></ul>
+      </div>
+      <div class="quadrant q3" data-quadrant="q3">
+        <div class="quadrant-head">
+          <span class="quadrant-title">⚡️ 빠르게 처리</span>
+          <span class="quadrant-sub">안 중요 · 긴급</span>
+        </div>
+        <ul class="item-list" data-list="q3"></ul>
+      </div>
+      <div class="quadrant q4" data-quadrant="q4">
+        <div class="quadrant-head">
+          <span class="quadrant-title">🌿 여유 있을 때</span>
+          <span class="quadrant-sub">안 중요 · 안 긴급</span>
+        </div>
+        <ul class="item-list" data-list="q4"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- View: Reading list -->
+  <section id="readView" class="view" hidden>
+    <p class="matrix-intro">서핑하다 발견한 글, 나중에 읽을 링크를 모아두세요.</p>
+
+    <h3 class="list-heading">📌 읽을 예정</h3>
+    <ul id="readQueueList" class="item-list read-list"></ul>
+    <p id="readQueueEmpty" class="empty-hint" hidden>저장된 글이 없어요. + 버튼으로 링크를 추가해보세요.</p>
+
+    <div class="list-heading-row">
+      <h3 class="list-heading">📚 읽은 기록</h3>
+      <button id="exportReadBtn" class="ghost-btn small-btn" type="button">⬇ 내보내기</button>
+    </div>
+    <ul id="readDoneList" class="item-list read-list read-archive"></ul>
+    <p id="readDoneEmpty" class="empty-hint" hidden>아직 다 읽은 글이 없어요. 체크 표시를 누르면 요약과 함께 여기 쌓여요.</p>
+  </section>
+
+  <!-- Floating add button -->
+  <button id="addBtn" class="fab" type="button" aria-label="추가">+</button>
+
+  <!-- Bottom tab bar -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-view="calendarView" type="button">
+      <span class="tab-icon">🗓️</span><span>캘린더</span>
+    </button>
+    <button class="tab-btn" data-view="matrixView" type="button">
+      <span class="tab-icon">🧭</span><span>할 일</span>
+    </button>
+    <button class="tab-btn" data-view="readView" type="button">
+      <span class="tab-icon">🔖</span><span>To Read List</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Add/Edit modal -->
+<div id="modalOverlay" class="modal-overlay" hidden>
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitle">새 일정</h2>
+
+    <form id="itemForm">
+      <label class="field">
+        <span>제목 *</span>
+        <input type="text" id="fieldTitle" maxlength="60" placeholder="예: 팀 회의" required />
+      </label>
+
+      <label class="field" id="urlFieldWrap" hidden>
+        <span>링크 (URL)</span>
+        <input type="url" id="fieldUrl" placeholder="https://..." />
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>날짜</span>
+          <input type="date" id="fieldDate" />
+        </label>
+        <label class="field">
+          <span>시간</span>
+          <input type="time" id="fieldTime" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>메모</span>
+        <textarea id="fieldMemo" rows="2" maxlength="200" placeholder="세부 내용 (선택)"></textarea>
+      </label>
+
+      <label class="field" id="summaryFieldWrap" hidden>
+        <span>읽고 남긴 요약</span>
+        <textarea id="fieldSummary" rows="3" maxlength="500" placeholder="이 글에서 무엇을 배웠나요? (다 읽은 후 작성해도 좋아요)"></textarea>
+      </label>
+
+      <div class="field">
+        <span>색상</span>
+        <div id="colorPicker" class="color-picker"></div>
+      </div>
+
+      <div class="field-row toggles" id="priorityFieldWrap">
+        <label class="switch-field">
+          <input type="checkbox" id="fieldImportant" />
+          <span class="switch"></span>
+          <span class="switch-label">중요</span>
+        </label>
+        <label class="switch-field">
+          <input type="checkbox" id="fieldUrgent" />
+          <span class="switch"></span>
+          <span class="switch-label">긴급</span>
+        </label>
+      </div>
+
+      <label class="switch-field" id="remindFieldWrap">
+        <input type="checkbox" id="fieldRemind" />
+        <span class="switch"></span>
+        <span class="switch-label">🔔 이 날짜·시간에 알림 받기</span>
+      </label>
+      <p class="field-hint" id="remindHint">알림을 받으려면 날짜와 시간을 함께 입력해주세요.</p>
+
+      <label class="switch-field done-field" id="doneFieldWrap" hidden>
+        <input type="checkbox" id="fieldDone" />
+        <span class="switch"></span>
+        <span class="switch-label" id="fieldDoneLabel">완료됨</span>
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" id="deleteBtn" class="danger-btn" hidden>삭제</button>
+        <button type="button" id="cancelBtn" class="ghost-btn">취소</button>
+        <button type="submit" class="primary-btn">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sync / pairing modal -->
+<div id="syncModalOverlay" class="modal-overlay" hidden>
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>🔄 기기 연결</h2>
+    <p id="syncStatus" class="field-hint">상태를 확인하는 중...</p>
+
+    <div id="syncPairForm">
+      <label class="field">
+        <span>동기화 코드</span>
+        <input type="text" id="syncCodeInput" placeholder="아이폰·맥북에 동일하게 입력할 코드" autocapitalize="off" autocorrect="off" />
+      </label>
+      <p class="field-hint">Netlify 환경변수 <code>SYNC_CODE</code>에 설정한 값과 똑같이 입력하세요. 같은 코드를 입력한 기기끼리 데이터가 자동으로 동기화돼요.</p>
+      <div class="modal-actions">
+        <button type="button" id="syncConnectBtn" class="primary-btn">연결하기</button>
+      </div>
+    </div>
+
+    <div id="syncConnectedInfo" hidden>
+      <div class="modal-actions">
+        <button type="button" id="syncDisconnectBtn" class="ghost-btn" style="flex:1;">연결 해제</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" id="syncCloseBtn" class="ghost-btn" style="flex:1;">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick "mark as read" summary prompt -->
+<div id="summaryPromptOverlay" class="modal-overlay" hidden>
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>✅ 다 읽으셨나요?</h2>
+    <p id="summaryPromptTitle" class="field-hint"></p>
+    <label class="field">
+      <span>한 줄 요약 (선택)</span>
+      <textarea id="summaryPromptText" rows="3" maxlength="500" placeholder="핵심만 간단히 적어두면 나중에 찾기 쉬워요"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" id="summarySkipBtn" class="ghost-btn">요약 없이 완료</button>
+      <button type="button" id="summarySaveBtn" class="primary-btn">완료로 저장</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="summaryCancelBtn" class="ghost-btn" style="flex:1;">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification settings modal -->
+<div id="notifyModalOverlay" class="modal-overlay" hidden>
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>🔔 알림 설정</h2>
+    <p id="notifyStatus" class="field-hint">알림 상태를 확인하는 중...</p>
+    <div class="modal-actions" style="margin-bottom: 10px;">
+      <button type="button" id="notifyEnableBtn" class="primary-btn">알림 켜기</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="notifyTestBtn" class="ghost-btn" style="flex:1;">테스트 알림 보내기</button>
+    </div>
+    <p class="field-hint">배포 전(로컬 미리보기)에는 알림이 실제로 오지 않아요. Netlify에 배포한 뒤 이 화면에서 켜주세요.</p>
+    <div class="modal-actions">
+      <button type="button" id="notifyCloseBtn" class="ghost-btn" style="flex:1;">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "내 일정 관리",
+  "short_name": "일정관리",
+  "description": "캘린더와 중요도·긴급도 사분면으로 관리하는 나만의 일정 관리 앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F5FB",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
