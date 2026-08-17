@@ -1,8 +1,6 @@
 const webpush = require("web-push");
-const { getStore } = require("@netlify/blobs");
+const { getRemindersStore } = require("./lib/blobs");
 
-// Manual trigger used by the app's "테스트 알림 보내기" button, so the user
-// can confirm push notifications actually work right after deploying.
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -29,7 +27,7 @@ exports.handler = async (event) => {
   }
   webpush.setVapidDetails(subject, publicKey, privateKey);
 
-  const store = getStore("reminders");
+  const store = getRemindersStore();
   const subscriptions = (await store.get("subscriptions", { type: "json" })) || [];
   if (subscriptions.length === 0) {
     return { statusCode: 400, body: JSON.stringify({ error: "저장된 구독 정보가 없어요. 먼저 알림을 켜주세요." }) };
