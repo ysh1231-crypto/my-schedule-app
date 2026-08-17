@@ -1,10 +1,6 @@
 const webpush = require("web-push");
-const { getStore } = require("@netlify/blobs");
+const { getRemindersStore } = require("./lib/blobs");
 
-// Runs automatically every 5 minutes (see netlify.toml). Checks which
-// reminders are due and sends a real push notification via APNs/FCM,
-// which arrives even if the phone/app is completely closed. Notifies
-// every paired device (subscriptions is a list, one per device).
 exports.handler = async () => {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -16,7 +12,7 @@ exports.handler = async () => {
   }
   webpush.setVapidDetails(subject, publicKey, privateKey);
 
-  const store = getStore("reminders");
+  const store = getRemindersStore();
   const subscriptions = (await store.get("subscriptions", { type: "json" })) || [];
   const items = (await store.get("items", { type: "json" })) || [];
 
@@ -61,10 +57,8 @@ exports.handler = async () => {
       item.remindSent = true;
       item.updatedAt = Date.now();
     }
-    // If nothing succeeded, leave remindSent false so it retries next run.
   }
 
-  // Keep the stored list small: drop items sent more than 7 days ago.
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const pruned = items.filter((it) => !it.remindSent || new Date(it.remindAt).getTime() > weekAgo);
 
